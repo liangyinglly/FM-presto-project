@@ -1,6 +1,6 @@
-# CMU 17-614 Formal Methods – Final Project: Presto Ride-Sharing App
+# Presto Ride-Sharing App
 
-This repository contains our team’s deliverables for the **Formal Methods Final Project**.  
+This repository contains our team’s deliverables for the **CMU 17-614 Formal Methods Final Project**.  
 We modeled *Presto*, a ride-sharing application similar to Uber/Lyft, using Alloy and FSP to analyze its correctness and reliability.
 
 ---
