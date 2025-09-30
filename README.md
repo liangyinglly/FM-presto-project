@@ -28,9 +28,10 @@ The report combines both models and reflects on their strengths and weaknesses.
   - Assertions verifying invariants are preserved  
   - Sample `run` commands for visualization
 
+
 - `fsp/presto.fsp`  
   FSP model of the scheduler:  
-  - 
+  - to be done
   - 
   - 
 
