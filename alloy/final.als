@@ -284,4 +284,5 @@ pred onePendingAtHead[s1: State] {
   let rq = s1.pendingQ.first |
     s1.reqStatus[rq] = Pending and one s1.reqRider[rq]
 }
+
 run { some s1: State | inv[s1] and onePendingAtHead[s1] } for 8 but exactly 1 State, 4 seq
