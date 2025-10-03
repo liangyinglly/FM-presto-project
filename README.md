@@ -36,14 +36,6 @@ The report combines both models and reflects on their strengths and weaknesses.
   - 
 
 
-- `report/project-report.tex` (with `project-report.pdf`)  
-  Formal report answering required questions:  
-  - Object Model Diagram (Alloy)  
-  - Process Structure Diagram (FSP)  
-  - Additional invariants discovered  
-  - Validation strategy and scopes used  
-  - Reflection: Alloy vs. FSP
-
 - `README.md`  
   You are here: description of files and execution instructions.
 
