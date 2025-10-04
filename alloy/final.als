@@ -43,6 +43,24 @@ sig State {
 // Helper predicates (invariants building blocks)
 //--------------------------------------
 
+// Ensures all relations are properly scoped to the state's universe sets.
+pred domainsWellFormed[s1: State] {
+	// Request relations must be about requests in this state
+	s1.reqRider.Rider = s1.requests
+	s1.origin.Location = s1.requests
+	s1.destination.Location = s1.requests
+	s1.reqStatus.RqStatus = s1.requests
+	s1.assignedTo.Driver = {rq: s1.requests | s1.reqStatus[rq] = Riding}
+
+	// Riders and Drivers in relations must exist in this state
+	s1.requests.(s1.reqRider) in s1.riders
+	s1.requests.(s1.assignedTo) in s1.drivers
+	
+	// Driver relations must be about drivers in this state
+	s1.dStatus.DStatus = s1.drivers
+	s1.regions.Location = s1.drivers
+}
+
 // Queue contains exactly the pending requests, no duplicates, full coverage
 pred queueWellFormed[s1: State] {
   let q = s1.pendingQ.elems |
@@ -53,13 +71,13 @@ pred queueWellFormed[s1: State] {
 
 // Each Rider has at most one "active" request (Pending or Riding)
 pred oneActivePerRider[s1: State] {
-  all r: Rider |
+  all r: s1.riders |
     lone { rq: s1.requests | s1.reqRider[rq] = r and s1.reqStatus[rq] in (Pending + Riding) }
 }
 
 // A Driver serves at most one request; Driving iff serving one
 pred driverServingConsistency[s1: State] {
-  all d: Driver |
+  all d: s1.drivers |
     lone { rq: s1.requests | s1.assignedTo[rq] = d } and
     ((some rq: s1.requests | s1.assignedTo[rq] = d) iff s1.dStatus[d] = Driving)
 }
@@ -84,6 +102,7 @@ pred inv[s1: State] {
   driverServingConsistency[s1]
   assignmentStatusConsistency[s1]
   originDestSane[s1]
+  domainsWellFormed[s1]
 }
 
 //--------------------------------------
@@ -314,7 +333,6 @@ pred test_RidingRequestInPendingQueue[s: State] {
 run test_RidingRequestInPendingQueue for 4 expect 0
 
 // It should be impossible for a driver to be 'Available' but still assigned to a request.
-// fails
 pred test_AvailableDriverIsAssigned[s: State] {
 	inv[s]
 	some d: s.drivers | {
