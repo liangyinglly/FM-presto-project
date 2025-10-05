@@ -1,0 +1,51 @@
+const NUMDRIVER=2     //maximum number of drivers
+range Driver=0..NUMDRIVER  //available driver range
+
+const NUMRIDER = 2 //ordernum total, equal to number of rider
+range Order  = 1..NUMRIDER //available ordernum range
+
+ORDER    = NEXT[1], //give order number to riders, from 1 to NUMRIDER.
+NEXT[t:Order] = (request[t]->NEXT[t%NUMRIDER+1]).
+
+SCHEDULER  = DRIVER[NUMDRIVER][1], //n drivers available, now service 1
+DRIVER[d:Driver][t:Order]  = (when (d>0) match[t]-> DRIVER[d-1][t%NUMRIDER+1] // more than one driver available
+	          |when(d<NUMDRIVER) complete -> DRIVER[d+1][t]//complete means arrive to destination
+		  ).
+
+//rider, request for a ride (one ride) b = 1 
+RIDER      = (request[t:Order]->match[t]->complete->RIDER).//player for b balls
+
+set Riders = {rider1,rider2}
+
+||ASSIGN_SYS = (Riders:RIDER 
+	     || Riders::(SCHEDULER||ORDER) 
+	     ).
+
+//CHECK1: FIFO Check for two instances:
+property FIFO_CHECK = INITIAL,
+INITIAL = ( request[1] -> REQ1
+          | request[2] -> REQ2
+          ),
+REQ1    = ( request[2] -> REQ1_THEN_2 // Now request[2] arrives
+          | match[1]   -> INITIAL     // request[1] is matched, order is fulfilled
+          ),
+// State after request[2] has been seen
+REQ2    = ( request[1] -> REQ2_THEN_1 // Now request[1] arrives
+          | match[2]   -> INITIAL     // request[2] is matched, order is fulfilled
+          ),
+// State where request[1] occurred BEFORE request[2]
+REQ1_THEN_2 = ( match[1] -> REQ2      // Correct: match[1] comes first, now wait for match[2]
+              | match[2] -> ERROR     // VIOLATION: match[2] occurred before match[1]
+              ),
+// State where request[2] occurred BEFORE request[1]
+REQ2_THEN_1 = ( match[2] -> REQ1      // Correct: match[2] comes first, now wait for match[1]
+              | match[1] -> ERROR     // VIOLATION: match[1] occurred before match[2]
+            
+  ).
+||FIFO_CHECKSYS = (ASSIGN_SYS || Riders::FIFO_CHECK).
+
+//CHECK2: Every ride request is eventually served 
+progress RIDERS_VALID = {Riders.match[Order]}
+||ProgressCheck = ASSIGN_SYS >>{Riders.complete}.
+
+//CHECK3 for deadlock don't need do it manually.

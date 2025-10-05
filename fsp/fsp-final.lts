@@ -1,0 +1,52 @@
+const NUMDRIVER=2     //maximum number of drivers
+range Driver=0..NUMDRIVER  //available driver range
+
+const NUMRIDER = 2 //ordernum total, equal to number of rider
+range Order  = 1..NUMRIDER //available ordernum range
+
+ORDER    = NEXT[1], //give order number to riders, begin from 1 
+NEXT[t:Order] = (request[t]->NEXT[t%NUMRIDER+1]). // move on to numbers
+
+SCHEDULER  = DRIVER[NUMDRIVER][1], //n drivers available, now service the first order
+
+DRIVER[d:Driver][t:Order] =
+    ( when(d>0) match[t]  -> DRIVER[d-1][t%NUMRIDER+1] //successfully matched, use one driver
+        | cancel[t] -> DRIVER[d][t%NUMRIDER+1]     //slot canceled, move to another number
+    | when(d<NUMDRIVER) complete[t] -> DRIVER[d+1][t] //complete recent task
+    ).
+//rider, request for a ride (one ride) b = 1 
+RIDER      = (request[t:Order] -> RIDER[t]), //new request with order number
+RIDER[t:Order] = (match[t] -> complete[t] -> RIDER //matched
+                   | cancel[t] -> RIDER //cancel order with number t
+                   ).
+set Riders = {rider1,rider2}
+||ASSIGN_SYS = (Riders:RIDER || Riders::(SCHEDULER||ORDER)).
+
+//CHECK1: FIFO Check for two instances:
+property FIFO_CHECK = INITIAL,
+INITIAL = ( request[1] -> REQ1
+          | request[2] -> REQ2
+          ),
+REQ1    = ( request[2] -> REQ1_THEN_2
+          | match[1]   -> INITIAL
+          | cancel[1]  -> INITIAL //cancel and go back to INITIAL
+          ),
+REQ2    = ( request[1] -> REQ2_THEN_1
+          | match[2]   -> INITIAL
+          | cancel[2]  -> INITIAL //cancel and go back to INITIAL
+          ),
+REQ1_THEN_2 = ( match[1]  -> REQ2
+              | cancel[1] -> REQ2 //cancel and go back to REQ2
+              | match[2]  -> ERROR
+              ),
+REQ2_THEN_1 = ( match[2]  -> REQ1
+              | cancel[2] -> REQ1
+              | match[1]  -> ERROR
+              ).
+||FIFO_CHECKSYS = (ASSIGN_SYS || Riders::FIFO_CHECK).
+
+//CHECK2: Every ride request is eventually served 
+progress RIDERS_VALID = {Riders.match[Order]}
+||ProgressCheck = ASSIGN_SYS >>{Riders.complete}.
+
+//CHECK3 for deadlock don't need do it manually.
