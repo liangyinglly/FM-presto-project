@@ -62,14 +62,23 @@ Our validation strategy for the Alloy model involved:
   \item \textbf{Counterexample analysis}: If Alloy produced a counterexample, we refined the model (e.g., corrected scoping errors or missing conditions) until the invariants held.
   \item \textbf{Cross-checking with the spec}: Each invariant and operation was traced back to requirements in the Presto specification to ensure coverage.
 \end{itemize}
+In addition, we developed a suite of \textbf{positive and negative test predicates} 
+to exercise the model further. Positive tests (e.g., \texttt{test\_MultiplePending}, 
+\texttt{test\_MultipleConcurrentRides}) confirmed that realistic states were satisfiable, 
+while negative tests (e.g., \texttt{test\_RidingRequestInPendingQueue}, 
+\texttt{test\_AvailableDriverIsAssigned}, \texttt{test\_DuplicateRequestInQueue}) 
+demonstrated that invalid states were impossible under our invariants. 
+Running these tests under scopes of 4–7 atoms with exactly one \texttt{State} 
+reinforced our confidence that the model was both correct and complete.
 
 \subsection{Scopes for Checking Assertions}
 
-To check assertions, we limited the search space using small but sufficient scopes:
+For invariant preservation checks, we used scopes of 6–7 objects with exactly one State and up to 6 sequence elements. 
+This bound was sufficient because:
 \begin{itemize}[leftmargin=1.5em]
-  \item Typical runs used up to 6 riders, 6 drivers, 6 requests, and sequence lengths up to 6.
-  \item We used \texttt{exactly 1 State} to enforce a single system snapshot for each check.
-  \item These small scopes were sufficient to uncover design errors while keeping analysis tractable.
+  \item It allowed us to explore diverse combinations of Riders, Drivers, and Requests while keeping the analysis tractable.
+  \item Larger scopes (beyond 7) did not uncover new counterexamples, suggesting our invariants are robust.
+  \item These bounds match the project’s guidance for balancing coverage with solver performance.
 \end{itemize}
 
 \section{Task 2: Concurrency with FSP/LTSA}
