@@ -12,11 +12,11 @@ SCHEDULER  = DRIVER[NUMDRIVER][1], //n drivers available, now service the first 
 DRIVER[d:Driver][t:Order] =
     ( when(d>0) match[t]  -> DRIVER[d-1][t%NUMRIDER+1] //successfully matched, use one driver
         | cancel[t] -> DRIVER[d][t%NUMRIDER+1]     //slot canceled, move to another number
-    | when(d<NUMDRIVER) complete -> DRIVER[d+1][t] //complete recent task
+    | when(d<NUMDRIVER) complete[t] -> DRIVER[d+1][t] //complete recent task
     ).
 //rider, request for a ride (one ride) b = 1 
 RIDER      = (request[t:Order] -> RIDER[t]), //new request with order number
-RIDER[t:Order] = (match[t] -> complete -> RIDER //matched
+RIDER[t:Order] = (match[t] -> complete[t] -> RIDER //matched
                    | cancel[t] -> RIDER //cancel order with number t
                    ).
 set Riders = {rider1,rider2}
