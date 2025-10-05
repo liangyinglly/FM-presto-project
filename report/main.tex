@@ -92,18 +92,64 @@ This bound was sufficient because:
   \includegraphics[width=0.50\linewidth]{figs/process-structure.pdf}
   \caption{Process Structure diagram for the FSP model.}
 \end{figure}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{ORDER}: a generator that cycles order identifiers $t \in \{1,\dots,\texttt{NUMRIDER}\}$ and emits \texttt{request[$t$]} in round-robin order.
+  \item \textbf{RIDER($i$)} for each $i \in \{1,\dots,\texttt{NUMRIDER}\}$:
+    \texttt{request[$i$]} $\rightarrow$ \texttt{match[$i$]} $\rightarrow$ \texttt{complete[$i$]} (or \texttt{cancel[$i$]} before match).
+  \item \textbf{SCHEDULER} as a driver pool \texttt{DRIVER($d,t$)}:
+    \begin{itemize}[leftmargin=1.2em]
+      \item if $d>0$: \texttt{match[$t$]} uses one available driver $\Rightarrow$ \texttt{DRIVER($d{-}1$, next($t$))}
+      \item \texttt{cancel[$t$]} skips the slot $\Rightarrow$ \texttt{DRIVER($d$, next($t$))}
+      \item if $d<\texttt{NUMDRIVER}$: \texttt{complete[$t$]} returns a driver $\Rightarrow$ \texttt{DRIVER($d{+}1$, $t$)}
+    \end{itemize}
+\end{itemize}
+
+\noindent The system composition is:
+\[
+\texttt{ASSIGN\_SYS} = \left(\parallel\, i:\texttt{Order}\, @\, \texttt{RIDER}(i)\right) \parallel \texttt{SCHEDULER} \parallel \texttt{ORDER}.
+\]
+
 
 \subsection{Protocol Design}
 
-% Your response 
+\textbf{Events.} We model four observable events with an index $t$ identifying the request/rider:
+\texttt{request[$t$]}, \texttt{match[$t$]}, \texttt{cancel[$t$]}, \texttt{complete[$t$]}.
+
+\paragraph{Rider protocol.}
+For each rider $i$, the process \texttt{RIDER($i$)} performs \texttt{request[$i$]} then waits
+either to be matched (\texttt{match[$i$]}) and subsequently completed (\texttt{complete[$i$]}),
+or to cancel before being matched (\texttt{cancel[$i$]}), after which it may request again.
+
+\paragraph{Scheduler / driver pool.}
+The scheduler maintains an integer $d$ of available drivers and a rotating pointer $t$.
+If $d>0$, the scheduler may synchronize on \texttt{match[$t$]} (consuming one driver and moving to next($t$));
+upon \texttt{cancel[$t$]} it skips to next($t$) without consuming a driver; upon \texttt{complete[$t$]},
+it returns a driver ($d{+}1$) while keeping $t$ to allow back-to-back completions.
+
+\paragraph{Arrival order (FCFS).}
+Arrival order is modeled by \texttt{ORDER} which emits \texttt{request[$t$]} in a round-robin over the index set.
+We enforce first-come, first-served with a property automaton \texttt{FIFO\_CHECK} that flags an \texttt{ERROR}
+if \texttt{match[2]} occurs before \texttt{match[1]} when 1 arrived first (and symmetrically for two requests).
+This is the standard FIFO witness for two requests and is sufficient to catch out-of-order matches.
 
 \subsection{Details Abstracted from Task 1}
 
-% Your response 
+Compared to the Alloy state model, the FSP protocol abstracts away:
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Locations and regions}: We do not carry \texttt{origin}, \texttt{destination}, or driver \texttt{regions}. Region feasibility is left implicit (always matchable when a driver is available).
+  \item \textbf{Structural associations}: Fields such as \texttt{reqRider}, \texttt{assignedTo}, and the explicit \texttt{pendingQ} structure are represented behaviorally via indexed events and the scheduler’s pointer $t$.
+  \item \textbf{Per-request object identity}: Requests are denoted by indices ($t$) rather than explicit objects; this is sufficient for the concurrency protocol.
+\end{itemize}
 
 \subsection{Details Added Beyond Task 1}
 
-% Your response 
+The FSP model adds explicit behavioral constraints that Alloy does not natively express:
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Interleaving semantics}: Competing \texttt{request}, \texttt{match}, \texttt{cancel}, \texttt{complete} events from multiple riders interleave under LTSA’s process-algebra rules.
+  \item \textbf{Driver capacity dynamics}: The integer parameter $d$ captures resource consumption at \texttt{match[$t$]} and release at \texttt{complete[$t$]}.
+  \item \textbf{Safety property for FCFS}: The \texttt{FIFO\_CHECK} property process rules out any trace where a later request is matched before an earlier one (two-request witness).
+  \item \textbf{Progress (liveness)}: We require that completions keep happening via the LTSA progress set \texttt{progress SERVED = \{complete[Order]\}}; optionally, we can strengthen liveness with a per-request watchdog ensuring that after \texttt{request[$i$]} some \texttt{match[$i$]} or \texttt{cancel[$i$]} must occur.
+\end{itemize}
 
 \section{Task 3: Reflection}
 \label{sec:task3}
@@ -125,7 +171,19 @@ This bound was sufficient because:
 
 \subsection{FSP/LTSA: Strengths and Weaknesses}
 
-% Your response 
+\textbf{Strengths.}
+\begin{itemize}[leftmargin=1.5em]
+  \item Natural description of concurrent event interleavings and shared synchronizations.
+  \item Built-in checks for deadlock and support for progress (liveness) via progress sets.
+  \item Property processes (e.g., \texttt{FIFO\_CHECK}) make safety conditions executable.
+\end{itemize}
+
+\textbf{Weaknesses.}
+\begin{itemize}[leftmargin=1.5em]
+  \item Structural constraints (e.g., object associations, multiplicities) are not explicit; they must be encoded behaviorally or left to Alloy.
+  \item FIFO beyond the two-request witness requires either a generalized property pattern or a larger monitor, which can grow in complexity.
+  \item Liveness per request (``each request eventually served'') often needs additional fairness assumptions or watchdog processes to exclude pathological schedules.
+\end{itemize}
 
 \subsection{Other Aspects of Ride Sharing}
 
