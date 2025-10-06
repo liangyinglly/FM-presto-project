@@ -1,3 +1,4 @@
+//Formal methods Project ---- Group 12
 const NUMDRIVER=2     //maximum number of drivers
 range Driver=0..NUMDRIVER  //available driver range
 
