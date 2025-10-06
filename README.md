@@ -43,12 +43,42 @@ The report combines both models and reflects on their strengths and weaknesses.
   - We felt that that scope of 6 or 7 provides enough atoms(?) to cover most of the interesting interactions.
 
 
-- `fsp/presto.fsp`  
-  FSP model of the scheduler:  
-  - to be done
-  - 
-  - 
+- `fsp/fsp-final.lts`: FSP model of Presto ride-hailing (2 drivers, 2 riders), including:
 
+  - **Constants & Ranges**
+  `NUMDRIVER`, `NUMRIDER`, `Driver = 0..NUMDRIVER`, `Order = 1..NUMRIDER`
+  - **Core Processes**
+  `ORDER`, `SCHEDULER/DRIVER[d][t]`, `RIDER` (and indexed `RIDER[t]`)
+  - **System Composition**
+  `ASSIGN_SYS = (Riders:RIDER || Riders::(SCHEDULER || ORDER))` with
+  `set Riders = {rider1, rider2}`
+  - **Property/Check Models**
+  `FIFO_CHECK`, `FIFO_CHECKSYS`, progress property (`RIDERS_VALID`), and the composed system for progress (`ProgressCheck`)
+  - **Comments** explaining intent of guards (`when`), round-robin order tags, and the driver-count semaphore idea embedded in `DRIVER`
+  - **Key events:** `request[t]`, `match[t]`, `cancel[t]`, `complete[t]` (all indexed by order number `t`).
+
+  - **Design:**
+
+    - Riders issue `request[t]` for a slot number `t` produced by `ORDER` (a simple round-robin ticketing stream 1..NUMRIDER).
+
+    - `SCHEDULER` delegates to `DRIVER[d][t]`, tracking how many drivers are currently free (`d`) and which ticket `t` is being considered.
+
+    - On `match[t]`, one driver is consumed (`d-1`) and the next ticket is polled (`t%NUMRIDER+1`).
+
+    - On `complete[t]`, a driver is returned to the pool (`d+1`).
+
+    - `cancel[t]` advances the ticket pointer without changing the driver count.
+
+    - `RIDER[t]` captures rider-side behavior: either matched→completed, or canceled.
+
+  - **Properties & Checks**
+
+    - CHECK 1 — FIFO for two requests: `property FIFO_CHECK`
+      - `FIFO_CHECKSYS -> Tool Bar -> Check -> Progress` :  `No progress violations detected.`
+    - CHECK 2 — Progress (every request eventually served) : `progress RIDERS_VALID`
+      - `RIDERS_VALID -> Tool Bar -> Check -> Progress` :  `No progress violations detected.`
+    - CHECK 3 — Deadlock: LTSA’s built-in deadlock analysis on `ASSIGN_SYS`
+      - `Tool Bar -> Check -> Safety` :  `No deadlocks/errors`
 
 - `README.md`  
   You are here: description of files and execution instructions.
@@ -62,9 +92,9 @@ The report combines both models and reflects on their strengths and weaknesses.
 2. ## to de done ##
 
 ### FSP / LTSA
-1. Open `fsp/presto.fsp` in the [LTSA tool](http://www.doc.ic.ac.uk/ltsa/).
-2. ## to de done ##
-
+1. Open `fsp/fsp-final.lts` in the [LTSA tool](http://www.doc.ic.ac.uk/ltsa/).
+2. To run the model: Select `ASSIGN_SYS`, then click `Compile` icon, then click `||`  icon.
+3. To Check property: Select `FIFO_CHECK` or `RIDERS_VALID`, then click `Tool Bar -> Check -> Safety` or `Tool Bar -> Check -> Progress`.
 ---
 ## Reflection
 1. What are the strengths of Alloy that make it suitable for Task 1? What are its weaknesses?
@@ -76,7 +106,7 @@ The report combines both models and reflects on their strengths and weaknesses.
 - Iris Huang – Alloy modeling & validation testing 
 - Viren Dodia – Alloy modeling & validation   
 - Ray Xue – FSP modeling & verification  
-- Ziqin Shen – FSP modeling & verification   
+- Ziqin Shen – Contributed an FSP draft (not adopted)
 
 ---
 
