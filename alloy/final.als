@@ -1,3 +1,4 @@
+// Formal methods Project ---- Group 12
 // Presto — Alloy structural model with FCFS queue (built-in `seq`)
 // Matches the spec: riders/drivers/requests, operations, invariants, FCFS queue.
 
