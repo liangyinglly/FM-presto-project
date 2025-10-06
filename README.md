@@ -88,18 +88,14 @@ The report combines both models and reflects on their strengths and weaknesses.
 ## How to Execute the Models
 
 ### Alloy
-1. Open `alloy/presto.als` in the [Alloy Analyzer](http://alloytools.org/).
-2. ## to de done ##
+1. Open `alloy/final.als` in the [Alloy Analyzer](http://alloytools.org/).
+2. Click `execute` 
+3. click `show`
 
 ### FSP / LTSA
 1. Open `fsp/fsp-final.lts` in the [LTSA tool](http://www.doc.ic.ac.uk/ltsa/).
 2. To run the model: Select `ASSIGN_SYS`, then click `Compile` icon, then click `||`  icon.
 3. To Check property: Select `FIFO_CHECK` or `RIDERS_VALID`, then click `Tool Bar -> Check -> Safety` or `Tool Bar -> Check -> Progress`.
----
-## Reflection
-1. What are the strengths of Alloy that make it suitable for Task 1? What are its weaknesses?
-2. What are the strengths of FSP that make it suitable for Task 2? What are its weaknesses?
-3. What other aspects (not covered in this project) of a ride sharing app like Presto would be difficult to model using Alloy or FSP? Why so?
 ---
 
 ## 👥 Team Members
