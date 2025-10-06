@@ -89,9 +89,10 @@ This bound was sufficient because:
 \label{sec:process-structure}
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.50\linewidth]{figs/process-structure.pdf}
-  \caption{Process Structure diagram for the FSP model.}
+  \includegraphics[width=1.00\linewidth]{figs/process-structure.pdf}
+  \caption{Process structure of the \textit{Presto} system.}
 \end{figure}
+
 \begin{itemize}[leftmargin=1.5em]
   \item \textbf{ORDER}: a generator that cycles order identifiers $t \in \{1,\dots,\texttt{NUMRIDER}\}$ and emits \texttt{request[$t$]} in round-robin order.
   \item \textbf{RIDER($i$)} for each $i \in \{1,\dots,\texttt{NUMRIDER}\}$:
