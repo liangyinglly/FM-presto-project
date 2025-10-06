@@ -43,6 +43,24 @@ sig State {
 // Helper predicates (invariants building blocks)
 //--------------------------------------
 
+// Ensures all relations are properly scoped to the state's universe sets.
+pred domainsWellFormed[s1: State] {
+	// Request relations must be about requests in this state
+	s1.reqRider.Rider = s1.requests
+	s1.origin.Location = s1.requests
+	s1.destination.Location = s1.requests
+	s1.reqStatus.RqStatus = s1.requests
+	s1.assignedTo.Driver = {rq: s1.requests | s1.reqStatus[rq] = Riding}
+
+	// Riders and Drivers in relations must exist in this state
+	s1.requests.(s1.reqRider) in s1.riders
+	s1.requests.(s1.assignedTo) in s1.drivers
+	
+	// Driver relations must be about drivers in this state
+	s1.dStatus.DStatus = s1.drivers
+	s1.regions.Location = s1.drivers
+}
+
 // Queue contains exactly the pending requests, no duplicates, full coverage
 pred queueWellFormed[s1: State] {
   let q = s1.pendingQ.elems |
@@ -53,13 +71,13 @@ pred queueWellFormed[s1: State] {
 
 // Each Rider has at most one "active" request (Pending or Riding)
 pred oneActivePerRider[s1: State] {
-  all r: Rider |
+  all r: s1.riders |
     lone { rq: s1.requests | s1.reqRider[rq] = r and s1.reqStatus[rq] in (Pending + Riding) }
 }
 
 // A Driver serves at most one request; Driving iff serving one
 pred driverServingConsistency[s1: State] {
-  all d: Driver |
+  all d: s1.drivers |
     lone { rq: s1.requests | s1.assignedTo[rq] = d } and
     ((some rq: s1.requests | s1.assignedTo[rq] = d) iff s1.dStatus[d] = Driving)
 }
@@ -84,6 +102,7 @@ pred inv[s1: State] {
   driverServingConsistency[s1]
   assignmentStatusConsistency[s1]
   originDestSane[s1]
+  domainsWellFormed[s1]
 }
 
 //--------------------------------------
@@ -266,6 +285,96 @@ assert completePreservesInv {
     complete[s1, s2, r, d] implies (inv[s1] and inv[s2])
 }
 check completePreservesInv for 7 but exactly 1 State, 6 seq
+
+//--------------------------------------
+// Validation Predicates (Positive and Negative Tests)
+//--------------------------------------
+
+// --- Positive Tests (should be possible) ---
+
+// It should be possible for all drivers to be offline.
+pred test_AllDriversOffline[s: State] {
+	inv[s]
+	some s.drivers
+	all d: s.drivers | s.dStatus[d] = Offline
+	no s.requests
+}
+run test_AllDriversOffline for 3 expect 1
+
+// It should be possible for the pending queue to have multiple requests.
+pred test_MultiplePending[s: State] {
+	inv[s]
+	#s.pendingQ > 1
+}
+run test_MultiplePending for 4 but 3 seq expect 1
+
+// It should be possible for multiple rides to be happening simultaneously.
+pred test_MultipleConcurrentRides[s: State] {
+	inv[s]
+	# {rq: s.requests | s.reqStatus[rq] = Riding} > 1
+}
+run test_MultipleConcurrentRides for 5 expect 1
+
+// It should be possible for the system to have pending requests but no available drivers.
+pred test_PendingWithNoAvailableDrivers[s: State] {
+	inv[s]
+	some s.pendingQ
+	all d: s.drivers | s.dStatus[d] != Available
+}
+run test_PendingWithNoAvailableDrivers for 4 expect 1
+
+// --- Negative Tests (should be impossible) ---
+
+// It should be impossible for a request to be in the pending queue and have a 'Riding' status.
+pred test_RidingRequestInPendingQueue[s: State] {
+	inv[s]
+	some rq: s.pendingQ.elems | s.reqStatus[rq] = Riding
+}
+run test_RidingRequestInPendingQueue for 4 expect 0
+
+// It should be impossible for a driver to be 'Available' but still assigned to a request.
+pred test_AvailableDriverIsAssigned[s: State] {
+	inv[s]
+	some d: s.drivers | {
+		s.dStatus[d] = Available
+		some s.assignedTo.d
+	}
+}
+run test_AvailableDriverIsAssigned for 4 expect 0
+
+// It should be impossible for a request to have a 'Completed' status but still be assigned to a driver.
+// fails
+pred test_CompletedRequestIsAssigned[s: State] {
+	inv[s]
+	some rq: s.requests | {
+		s.reqStatus[rq] = Completed
+		some s.assignedTo[rq]
+	}
+}
+run test_CompletedRequestIsAssigned for 4 expect 0
+// It should be impossible for an offline driver to be assigned to a request.
+pred test_OfflineDriverIsAssigned[s: State] {
+	inv[s]
+	some d: s.drivers | {
+		s.dStatus[d] = Offline
+		some s.assignedTo.d
+	}
+}
+run test_OfflineDriverIsAssigned for 4 expect 0
+
+// It should be impossible for a single request to be associated with more than one rider.
+pred test_RequestHasMultipleRiders[s: State] {
+	inv[s]
+	some rq: s.requests | #rq.(s.reqRider) > 1
+}
+run test_RequestHasMultipleRiders for 4 expect 0
+
+// It should be impossible for a single request to exist in the pending queue more than once.
+pred test_DuplicateRequestInQueue[s: State] {
+	inv[s]
+	#s.pendingQ > #s.pendingQ.elems
+}
+run test_DuplicateRequestInQueue for 4 expect 0
 
 //--------------------------------------
 // Sample runs to visualize states
