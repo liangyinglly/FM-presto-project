@@ -16,6 +16,7 @@
 \usepackage{listings}
 \usepackage{amsmath,amssymb}
 \usepackage{cleveref}
+\usepackage{tikz}\usetikzlibrary{arrows.meta,positioning}
 
 % ---------- Metadata ----------
 \title{17-614: Project Write-up: Modeling \textit{Presto} (Ride Sharing App)}
@@ -128,7 +129,7 @@ upon \texttt{cancel[$t$]} it skips to next($t$) without consuming a driver; upon
 it returns a driver ($d{+}1$) while keeping $t$ to allow back-to-back completions.
 
 \paragraph{Arrival order (FCFS).}
-Arrival order is modeled by \texttt{ORDER} which emits \texttt{request[$t$]} in a round-robin over the index set.
+Arrival order is modeled by \texttt{ORDER} which emits \texttt{request[$t$]} in a round-robin over the index set use a ticketing scheme to make sure the riders are served by requesting order, giving each user request a number to manage request order.
 We enforce first-come, first-served with a property automaton \texttt{FIFO\_CHECK} that flags an \texttt{ERROR}
 if \texttt{match[2]} occurs before \texttt{match[1]} when 1 arrived first (and symmetrically for two requests).
 This is the standard FIFO witness for two requests and is sufficient to catch out-of-order matches.
@@ -178,7 +179,6 @@ The FSP model adds explicit behavioral constraints that Alloy does not natively 
   \item Built-in checks for deadlock and support for progress (liveness) via progress sets.
   \item Property processes (e.g., \texttt{FIFO\_CHECK}) make safety conditions executable.
 \end{itemize}
-
 \textbf{Weaknesses.}
 \begin{itemize}[leftmargin=1.5em]
   \item Structural constraints (e.g., object associations, multiplicities) are not explicit; they must be encoded behaviorally or left to Alloy.
@@ -195,5 +195,5 @@ While our models capture the core protocol, real-world ride sharing involves add
   \item \textbf{Geographic constraints}: Real-world routing, travel times, and multi-region rides.
   \item \textbf{System resilience}: Handling driver disconnections, rider no-shows, or sudden surges.
 \end{itemize}
-
+\noindent Additional information : We used AI(ChatGPT 5) on Alloy, FSP modeling and latex formating
 \end{document}
